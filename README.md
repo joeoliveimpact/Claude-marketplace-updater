@@ -15,36 +15,38 @@ run prints the backup path and how to undo it.
 
 ---
 
-## Fastest path — let Claude Code run it
+## Fastest path — ask Claude to run it
 
-Open **Claude Code in a terminal** and paste:
+Works from a **Claude Desktop chat** or **Claude Code in a terminal**. Paste:
 
 > Download the stuck-plugin fixer for my OS from
-> https://github.com/joeoliveimpact/Claude-marketplace-updater and run it with `--stage1`,
-> then tell me what to check.
+> https://github.com/joeoliveimpact/Claude-marketplace-updater and run it **detached** with
+> `--stage1`. Claude Desktop will close and reopen mid-fix — that's expected.
 
-The reference commands Claude will use:
+The reference commands Claude will use (detached, so the fix keeps running while Claude
+Desktop restarts):
 
 ```bash
 # macOS
 curl -fsSL https://raw.githubusercontent.com/joeoliveimpact/Claude-marketplace-updater/main/fix-marketplace-sync-macos.command -o /tmp/cmu.command
-bash /tmp/cmu.command --stage1
+(nohup bash /tmp/cmu.command --stage1 >/tmp/cmu-updater.log 2>&1 &)
 ```
 
 ```powershell
 # Windows (PowerShell)
 curl.exe -fsSL https://raw.githubusercontent.com/joeoliveimpact/Claude-marketplace-updater/main/fix-marketplace-sync-windows.bat -o "$env:TEMP\cmu.bat"
-& "$env:TEMP\cmu.bat" --stage1
+Start-Process "$env:TEMP\cmu.bat" -ArgumentList '--stage1'
 ```
 
 Running with `claude --dangerously-skip-permissions` (bypass-permissions mode) executes
 without approval prompts; in normal mode Claude asks you to approve the two commands once.
 
-### ⚠️ Run it from a terminal, not from inside Claude Desktop
-The fix **quits Claude Desktop** as its first move. Run it from Claude Code (terminal) or a
-plain terminal. If you run it from a chat inside the Claude Desktop app, you kill the very
-session driving it. Claude Code terminal sessions are left running — the scripts only target
-the Desktop app.
+### What to expect when you run it from inside Claude Desktop
+The fix **quits Claude Desktop** as its first move — your chat disappears with it. That's
+fine: the script runs detached, finishes the fix, and reopens Claude Desktop. Reopen your
+session (it's right where you left it), then check **Settings → Plugins** — or ask Claude to
+read the log (macOS: `/tmp/cmu-updater.log`). Claude Code terminal sessions are never
+touched — the scripts only target the Desktop app.
 
 ---
 
