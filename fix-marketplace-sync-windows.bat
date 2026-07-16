@@ -190,8 +190,26 @@ echo   [OK] --stage2 complete. Backup: "%CLAUDE_DIR%.bak-%TS%"
 echo   NEXT: Claude Desktop ^> Settings ^> Plugins - check the plugin's version.
 exit /b 0
 
+REM =================== CLI REGISTRY UPDATE HELPER ===================
+REM The cache clear above fixes what the app DISPLAYS. The version that
+REM actually LOADS is pinned in %USERPROFILE%\.claude\plugins\installed_plugins.json
+REM (the plugin registry). If the claude CLI is installed, unpin it here while
+REM Claude is closed: refresh each marketplace, then update every installed plugin.
+:cli_update
+where claude >nul 2>&1
+if errorlevel 1 (
+  echo   [i] claude CLI not found - skipping registry update.
+  echo       If the version is STILL old after reopening: uninstall the plugin,
+  echo       FULLY quit Claude, reopen, reinstall. That rewrites the registry.
+  exit /b 0
+)
+echo   Updating the plugin registry via the claude CLI (may take a minute)...
+powershell -NoProfile -Command "$reg = Join-Path $env:USERPROFILE '.claude\plugins\installed_plugins.json'; if (-not (Test-Path $reg)) { exit 0 }; $names = (Get-Content $reg -Raw | ConvertFrom-Json).plugins.PSObject.Properties.Name; $names | ForEach-Object { ($_ -split '@')[1] } | Sort-Object -Unique | ForEach-Object { claude plugin marketplace update $_ }; $names | ForEach-Object { claude plugin update $_ }"
+exit /b 0
+
 REM =================== LAUNCH HELPER ===================
 :launch
+call :cli_update
 echo   Reopening Claude...
 REM Standalone install first (AnthropicClaude), then Store app via its AppsFolder AUMID.
 if exist "%LOCALAPPDATA%\AnthropicClaude\claude.exe" (

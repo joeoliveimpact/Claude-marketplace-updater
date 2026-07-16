@@ -52,10 +52,13 @@ touched — the scripts only target the Desktop app.
 
 ## Stages
 
-- **`--stage1` (start here)** — surgical: clears only the `IndexedDB` cache, relaunches
-  Claude. Fixes most stalls.
+- **`--stage1` (start here)** — surgical: clears the `IndexedDB` display cache, then (if
+  the `claude` CLI is installed) updates the plugin version registry
+  (`~/.claude/plugins/installed_plugins.json`) — the file that decides which version
+  actually loads — and relaunches Claude. Fixes most stalls.
 - **`--stage2` (only if stage 1 didn't flip the version)** — full local reset: renames the
-  whole Claude app-data folder. You re-login after; your old state is kept in the backup.
+  whole Claude app-data folder (plus the same registry update). You re-login after; your
+  old state is kept in the backup.
 
 After either stage: open **Claude Desktop → Settings → Plugins** and check the plugin's
 version. Config for REVXL-style plugins is safe — it lives outside the plugin install

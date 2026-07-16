@@ -58,7 +58,33 @@ quit_claude() {
   sleep 2
 }
 
+cli_update() {
+  # The cache clear fixes what the app DISPLAYS. The version that actually
+  # LOADS is pinned in ~/.claude/plugins/installed_plugins.json (the plugin
+  # registry). If the claude CLI is installed, unpin it here while Claude is
+  # closed: refresh each marketplace, then update every installed plugin.
+  local reg="$HOME/.claude/plugins/installed_plugins.json"
+  if ! command -v claude >/dev/null 2>&1; then
+    echo "   [i] claude CLI not found - skipping registry update."
+    echo "       If the version is STILL old after reopening: uninstall the plugin,"
+    echo "       FULLY quit Claude, reopen, reinstall. That rewrites the registry."
+    return 0
+  fi
+  [ -f "$reg" ] || return 0
+  echo "   Updating the plugin registry via the claude CLI (may take a minute)..."
+  local plugins
+  plugins="$(grep -oE '"[A-Za-z0-9._-]+@[A-Za-z0-9._-]+"' "$reg" | tr -d '"' | sort -u)"
+  printf '%s\n' "$plugins" | awk -F@ '{print $2}' | sort -u | while read -r m; do
+    [ -n "$m" ] && claude plugin marketplace update "$m"
+  done
+  printf '%s\n' "$plugins" | while read -r p; do
+    [ -n "$p" ] && claude plugin update "$p"
+  done
+  return 0
+}
+
 launch_claude() {
+  cli_update
   echo "   Reopening Claude..."
   open -a "Claude" >/dev/null 2>&1 || echo "   [i] Could not auto-launch - open Claude manually."
 }
