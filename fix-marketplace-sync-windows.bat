@@ -5,8 +5,8 @@ title Claude Marketplace Sync Fixer (Windows)
 
 REM ============================================================
 REM  Claude Desktop marketplace-sync fixer  -  Windows
-REM  Fixes plugins stuck on an old version (e.g. Shortform
-REM  Superengine jammed on 0.1.0 when 0.1.1 is published).
+REM  Fixes plugins stuck on an old version after an update
+REM  was published.
 REM
 REM  Staged + FULLY REVERSIBLE: folders are RENAMED with a
 REM  timestamp, never deleted. Restore steps printed at the end.
@@ -80,11 +80,11 @@ if not exist "%IDB%" (
 call :launch
 echo.
 echo   ================= CHECK NOW =================
-echo    Settings ^> Plugins ^> Shortform Superengine
-echo    Look for version  0.1.1  ^(synced commit ce666c3^)
+echo    Settings ^> Plugins ^> the stuck plugin
+echo    Look for the NEW version number
 echo   ============================================
 echo.
-choice /c YN /m "   Did the version flip to 0.1.1"
+choice /c YN /m "   Did the version flip to the new one"
 if errorlevel 2 goto :stage2
 goto :fixed_s1
 
@@ -111,10 +111,10 @@ if errorlevel 1 (
 call :launch
 echo.
 echo   ================= CHECK AGAIN =================
-echo    Settings ^> Plugins ^> Shortform Superengine  ->  0.1.1 ?
+echo    Settings ^> Plugins ^> the stuck plugin  ->  new version ?
 echo   ==============================================
 echo.
-choice /c YN /m "   Did it flip to 0.1.1 now"
+choice /c YN /m "   Did it flip to the new version now"
 if errorlevel 2 goto :serverside
 goto :fixed_s2
 
@@ -136,7 +136,7 @@ goto :end
 
 :serverside
 echo.
-echo   [!!] Both stages ran and it's STILL 0.1.0.
+echo   [!!] Both stages ran and it's STILL on the old version.
 echo        That means the stale version is coming from Anthropic's servers -
 echo        no client-side fix exists. Report "both failed" to Joe -> escalate.
 echo        Your original setup is safe in: "%CLAUDE_DIR%.bak-%TS2%"

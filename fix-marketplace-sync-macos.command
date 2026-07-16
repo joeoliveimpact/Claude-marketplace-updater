@@ -1,8 +1,8 @@
 #!/bin/bash
 # ============================================================
 #  Claude Desktop marketplace-sync fixer  -  macOS
-#  Fixes plugins stuck on an old version (e.g. Shortform
-#  Superengine jammed on 0.1.0 when 0.1.1 is published).
+#  Fixes plugins stuck on an old version after an update
+#  was published.
 #
 #  Staged + FULLY REVERSIBLE: folders are RENAMED with a
 #  timestamp, never deleted. Restore steps printed at the end.
@@ -138,11 +138,11 @@ fi
 launch_claude
 echo
 echo "   ================= CHECK NOW ================="
-echo "    Settings > Plugins > Shortform Superengine"
-echo "    Look for version  0.1.1  (synced commit ce666c3)"
+echo "    Settings > Plugins > the stuck plugin"
+echo "    Look for the NEW version number"
 echo "   ============================================"
 echo
-printf "   Did the version flip to 0.1.1?  (y/n): "
+printf "   Did the version flip to the new one?  (y/n): "
 read -r A1
 A1="$(printf '%s' "$A1" | tr '[:upper:]' '[:lower:]')"
 if [ "$A1" = "y" ] || [ "$A1" = "yes" ]; then
@@ -176,10 +176,10 @@ fi
 launch_claude
 echo
 echo "   ================= CHECK AGAIN ================="
-echo "    Settings > Plugins > Shortform Superengine  ->  0.1.1 ?"
+echo "    Settings > Plugins > the stuck plugin  ->  new version ?"
 echo "   =============================================="
 echo
-printf "   Did it flip to 0.1.1 now?  (y/n): "
+printf "   Did it flip to the new version now?  (y/n): "
 read -r A2
 A2="$(printf '%s' "$A2" | tr '[:upper:]' '[:lower:]')"
 if [ "$A2" = "y" ] || [ "$A2" = "yes" ]; then
@@ -189,7 +189,7 @@ if [ "$A2" = "y" ] || [ "$A2" = "yes" ]; then
   echo "        (To undo: quit Claude, delete the new Claude folder, rename the .bak back.)"
 else
   echo
-  echo "   [!!] Both stages ran and it's STILL 0.1.0."
+  echo "   [!!] Both stages ran and it's STILL on the old version."
   echo "        The stale version is coming from Anthropic's servers -"
   echo "        no client-side fix exists. Report \"both failed\" to Joe -> escalate."
   echo "        Your original setup is safe in: $CLAUDE_DIR.bak-$TS2"
