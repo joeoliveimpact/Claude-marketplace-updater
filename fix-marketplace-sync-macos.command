@@ -25,9 +25,11 @@ echo "  ================================================================"
 echo "   CLAUDE MARKETPLACE SYNC FIXER  (macOS)"
 echo "  ================================================================"
 echo
-echo "   Your Claude plugins are stuck on an old version. GitHub has the"
-echo "   new one; Claude Desktop is holding a stale local cache. This"
-echo "   clears that cache so the new version can sync."
+echo "   Your Claude plugins are stuck on an old version. This clears the"
+echo "   Desktop display cache and then refreshes the plugin registry via"
+echo "   the claude CLI, which is what decides the version that loads."
+echo "   Note: this cannot fix plugins installed through Cowork/Customize -"
+echo "   those are served from Anthropic's side. See the end of this run."
 echo
 echo "   IMPORTANT:"
 echo "     - This will FULLY QUIT Claude Desktop (you will re-login)."
@@ -91,30 +93,51 @@ launch_claude() {
 
 # ========== NON-INTERACTIVE MODES (--stage1 / --stage2) ==========
 # For Claude Code-driven runs: no prompts, one stage per invocation.
-if [ -n "$MODE" ] && [ "$MODE" != "--stage1" ] && [ "$MODE" != "--stage2" ]; then
-  echo "   [X] Unknown option '$MODE'. Use --stage1 or --stage2."
+if [ "$MODE" = "--stage2" ]; then
+  cat <<'STAGE2_RETIRED'
+   [X] Stage 2 is RETIRED on safety grounds (v1.2).
+
+   It renamed the whole Claude app-data folder. That folder now also holds:
+     - claude_desktop_config.json  (local MCP server config - it does NOT come back
+       after re-login; it is local, not synced)
+     - local-agent-mode-sessions/  (the entire Cowork plugin store)
+     - claude-code/                (the running Claude Code executable)
+
+   Renaming it strands every Desktop plugin and takes local MCP config with it.
+
+   If Stage 1 did not fix it, the cause is one of these instead:
+     - Registry pin  -> claude plugin update <plugin>@<marketplace>, then verify the
+                        version actually changed in installed_plugins.json
+     - Still pinned  -> claude plugin uninstall then install (rewrites the registry)
+     - Cowork plugin -> no local fix exists. Remove the plugin in Customize > Skills
+                        so agent mode falls back to your CLI copy. See
+                        github.com/anthropics/claude-code/issues/69683
+STAGE2_RETIRED
+  exit 2
+fi
+if [ -n "$MODE" ] && [ "$MODE" != "--stage1" ]; then
+  echo "   [X] Unknown option '$MODE'. Use --stage1."
   exit 2
 fi
 if [ -n "$MODE" ]; then
   quit_claude
   TS="$(date +%Y%m%d-%H%M%S)"
-  if [ "$MODE" = "--stage1" ]; then
-    if [ -d "$IDB" ]; then
-      echo "   Renaming IndexedDB  ->  IndexedDB.bak-$TS"
-      mv "$IDB" "$IDB.bak-$TS" || { echo "   [X] Rename failed - close Claude fully and re-run."; exit 1; }
-    else
-      echo "   [i] IndexedDB folder not found - may already be cleared."
-    fi
+  if [ -d "$IDB" ]; then
+    echo "   Renaming IndexedDB  ->  IndexedDB.bak-$TS"
+    mv "$IDB" "$IDB.bak-$TS" || { echo "   [X] Rename failed - close Claude fully and re-run."; exit 1; }
   else
-    echo "   Renaming Claude folder  ->  Claude.bak-$TS"
-    mv "$CLAUDE_DIR" "$CLAUDE_DIR.bak-$TS" || { echo "   [X] Rename failed - close Claude fully and re-run."; exit 1; }
+    echo "   [i] IndexedDB folder not found - may already be cleared."
   fi
   launch_claude
   echo
   echo "   [OK] $MODE complete. Backup kept (nothing deleted)."
   echo "   NEXT: Claude Desktop > Settings > Plugins - check the plugin's version."
   if [ "$MODE" = "--stage1" ]; then
-    echo "   Still on the old version? Re-run this script with --stage2 (full reset, reversible)."
+    echo "   Still on the old version? Do NOT reach for a bigger clear - it is not a cache problem."
+    echo "   Registry pin  -> claude plugin update <plugin>@<marketplace>, then confirm the"
+    echo "                    version actually changed in installed_plugins.json."
+    echo "   Still pinned  -> claude plugin uninstall then install (rewrites the registry)."
+    echo "   Cowork plugin -> no local fix exists; remove it in Customize > Skills."
   fi
   exit 0
 fi
@@ -153,46 +176,24 @@ if [ "$A1" = "y" ] || [ "$A1" = "yes" ]; then
   read -r -p "   Press Enter to close."; exit 0
 fi
 
-# =================== STAGE 2 - full ===================
+# =================== STAGE 2 - RETIRED (v1.2) ===================
 echo
-echo "   --- Stage 2: full local reset (whole Claude folder) ---"
-echo "   Bigger clear, still reversible. Your MCP servers reappear after re-login."
-printf "   Run Stage 2 now?  (y/n): "
-read -r S2
-S2="$(printf '%s' "$S2" | tr '[:upper:]' '[:lower:]')"
-if [ "$S2" != "y" ] && [ "$S2" != "yes" ]; then
-  echo "   Stopped before Stage 2. Stage 1 backup (if made): $IDB.bak-$TS"
-  read -r -p "   Press Enter to close."; exit 0
-fi
-
-quit_claude
-TS2="$(date +%Y%m%d-%H%M%S)"
-echo "   Renaming Claude folder  ->  Claude.bak-$TS2"
-if ! mv "$CLAUDE_DIR" "$CLAUDE_DIR.bak-$TS2"; then
-  echo "   [X] Rename failed - close Claude fully and re-run."
-  read -r -p "   Press Enter to close."; exit 1
-fi
-
-launch_claude
+echo "   Stage 1 did not fix it - and a bigger clear is NOT the answer."
 echo
-echo "   ================= CHECK AGAIN ================="
-echo "    Settings > Plugins > the stuck plugin  ->  new version ?"
-echo "   =============================================="
+echo "   Stage 2 used to rename the whole Claude app-data folder. That folder now also"
+echo "   holds your local MCP config (claude_desktop_config.json - it does NOT come back"
+echo "   after re-login), the entire Cowork plugin store, and the running Claude Code"
+echo "   executable. Renaming it strands every Desktop plugin. It has been retired."
 echo
-printf "   Did it flip to the new version now?  (y/n): "
-read -r A2
-A2="$(printf '%s' "$A2" | tr '[:upper:]' '[:lower:]')"
-if [ "$A2" = "y" ] || [ "$A2" = "yes" ]; then
-  echo
-  echo "   [OK] FIXED via Stage 2 (full clear)."
-  echo "        Backup: $CLAUDE_DIR.bak-$TS2  (old settings/MCP live here)"
-  echo "        (To undo: quit Claude, delete the new Claude folder, rename the .bak back.)"
-else
-  echo
-  echo "   [!!] Both stages ran and it's STILL on the old version."
-  echo "        The stale version is coming from Anthropic's servers -"
-  echo "        no client-side fix exists. Report \"both failed\" to Joe -> escalate."
-  echo "        Your original setup is safe in: $CLAUDE_DIR.bak-$TS2"
-fi
-read -r -p "   Press Enter to close."
-exit 0
+echo "   What to try instead, in order:"
+echo "     1. Registry pin  - claude plugin update <plugin>@<marketplace>"
+echo "                        then confirm the version really changed in"
+echo "                        ~/.claude/plugins/installed_plugins.json"
+echo "     2. Still pinned  - claude plugin uninstall <plugin>@<marketplace>"
+echo "                        then claude plugin install <plugin>@<marketplace>"
+echo "     3. Cowork plugin - no local fix exists. Remove it in Customize > Skills so"
+echo "                        agent mode falls back to your CLI copy."
+echo "                        github.com/anthropics/claude-code/issues/69683"
+echo
+echo "        Stage 1 backup (if made): $IDB.bak-$TS"
+read -r -p "   Press Enter to close."; exit 0

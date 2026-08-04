@@ -2,7 +2,7 @@
 
 Force-updates Claude Desktop plugins that are **stuck on an old version** — the marketplace
 published a new release, but your installed plugin won't move (and "check for updates" does
-nothing). The cause is a stale local cache inside Claude Desktop; these scripts clear it so
+nothing). The usual cause is the plugin registry (`installed_plugins.json`) still pointing at the old version while the new one sits unused in the cache. A display-cache clear alone does not move it; these scripts clear it so
 the new version syncs.
 
 **Staged and fully reversible:** folders are *renamed* with a timestamp, never deleted. Every
@@ -93,3 +93,19 @@ App-data locations: Windows `%APPDATA%\Claude` · macOS `~/Library/Application S
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Stage 2 is retired (v1.2)
+
+Stage 2 renamed the entire Claude app-data folder. That folder now also holds
+`claude_desktop_config.json` (local MCP config, which does **not** come back after
+re-login), the Cowork plugin store, and the running Claude Code executable. Renaming it
+strands every Desktop plugin. Passing `--stage2` now refuses with an explanation.
+
+If stage 1 does not fix it, the cause is one of:
+
+- **Registry pin** — `claude plugin update <plugin>@<marketplace>`, then confirm the
+  version really changed in `installed_plugins.json`.
+- **Still pinned** — `claude plugin uninstall` then `install` (rewrites the registry).
+- **Cowork plugin** — no local fix exists; Anthropic serves it from their side. Remove it
+  in Customize → Skills so agent mode falls back to your CLI copy.
+  ([#69683](https://github.com/anthropics/claude-code/issues/69683))
